@@ -17,8 +17,8 @@ let s:default_rail_name = "default"
 let s:current_rail = s:default_rail_name
 let s:station_id = 0
 let s:station_dict = {
-                     \ "all":{},      
-                     \ s:default_rail_name:{}
+                     \ "all":[],      
+                     \ "default":[]
                      \ }
 "}}}
 
