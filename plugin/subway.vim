@@ -8,6 +8,7 @@ set cpo&vim
 
 
 command! -nargs=? SBMake call subway#make_station(<f-args>)
+command! SBDestroy call subway#destroy_station()
 
 
 

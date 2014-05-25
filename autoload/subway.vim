@@ -11,6 +11,12 @@ let s:save_cpo = &cpo
 set cpo&vim
 "}}}
 
+" vital {{{
+let s:vital = vital#of('subway')
+let s:vital_data_string = s:vital.import('Data.String')
+" }}}
+
+
 
 " local variable.  " {{{
 let s:default_rail_name = "default"
@@ -30,18 +36,27 @@ function! s:create_station_info()
     
     "bufferidで十分？ filepathいらないかも
     let stationInfo = {
+                    \ 'id'       : s:station_id,
                     \ 'filepath' : expand('%:p'),
                     \ 'position' : getpos('.'),
                     \ 'string'   : getline("."),
                     \ 'bufferid' : bufnr('%'),
-                    \ 'id'   : s:station_id,
                     \}
-
-    echo stationInfo
 
     let s:station_id = s:station_id + 1
 
     return stationInfo
+endfunction
+
+function! s:subway_execute_command(command)
+    let oldLang = v:lang
+    exec ":lan mes en_US"
+    let l:result = ""
+    redir => l:result
+    silent exe a:command
+    redir END
+    exec ":lan mes " . oldLang
+    return l:result
 endfunction
 
 function! s:subway_make_user_select_list(targetlist)
@@ -68,6 +83,44 @@ function! s:subway_get_station_list(railName)
 endfunction
 
 
+function! s:subway_get_station_from_id(railName, stationId)
+    let l:stationList = s:subway_get_station_list(a:railName)
+
+    let l:resultStation = {}
+    for station in l:stationList
+        if station['id'] == a:stationId
+            l:resultStation = station
+            break
+        endif
+    endfor
+
+    return l:resultStation 
+endfunction
+
+function! s:subway_get_station_id_from_line_number(lineNumber)
+    let l:nativeSignalResult = s:subway_execute_command('sign place buffer='.bufnr('%'))
+    let l:nativeSignalList = s:vital_data_string.lines(l:nativeSignalResult)
+
+    let l:result = -1
+    for signalstring in l:nativeSignalList
+        
+        "check line number
+        if match(signalstring, "line=" . a:lineNumber, 0) < 0
+            continue
+        endif
+
+        "check name
+        if match(signalstring, "name=".s:current_rail_name, 0) < 0
+            continue
+        endif
+
+        let l:result = substitute(signalstring,'.*id=\([0-9]\+\).*','\1',"")
+        break
+    endfor
+
+    return l:result
+endfunction
+
 function! subway#change_rail_from_name(...)
 
     let railName = a:0 == 0 ? s:current_rail_name : a:1
@@ -77,10 +130,12 @@ function! subway#change_rail_from_name(...)
         return
     endif
 
+
     let s:current_rail_name = l:railName
 endfunction
 
-function! subway#change_rail_from_ui()
+
+function! subway#change_rail_from_list()
 
     let l:railList = keys(s:station_dict)
     let l:displayList = s:subway_make_user_select_list(l:railList)
@@ -90,7 +145,7 @@ function! subway#change_rail_from_ui()
         return 
     endif
 
-    let s:current_rail_name = l:railList[l:inputnumber]
+    call subway#change_rail_from_name(l:railList[l:inputnumber])
 endfunction
 
 function! subway#create_rail(railName)
@@ -123,6 +178,11 @@ function! subway#make_station(...)
     exe 'sign place '.stationInfo["id"].' line='.stationInfo["position"][1].' name='.railName.' buffer='.stationInfo["bufferid"]
 
     call add(stationList,stationInfo)
+endfunction
+
+function! subway#destroy_station()
+    echo s:subway_get_station_id_from_line_number(line("."))
+ 
 endfunction
 
 
