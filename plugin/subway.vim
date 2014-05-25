@@ -7,7 +7,7 @@ set cpo&vim
 
 
 
-command! -nargs=* SBMake call subway#make_station("target", <f-args>)
+command! -nargs=? SBMake call subway#make_station(<f-args>)
 
 
 
