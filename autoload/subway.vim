@@ -183,35 +183,47 @@ function! subway#create_rail(railName)
     return 1
 endfunction
 
-function! subway#make_rail(railName)
-    if has_key(s:staion_list, railName) == 0
-    endif
-endfunction
-
 function! subway#make_station(...)
+    let stationId = s:subway_get_id_from_line_number_in_buffer(line("."))
+    if stationId != -1
+        return
+    endif
 
     let railName = a:0 == 0 ? s:current_rail_name : a:1
     let stationList = s:subway_get_station_list(railName)
     let stationInfo = s:create_station_info()
 
-    exe 'sign define '.railName.' text=*'
+    let textLabel = railName == s:central_rail_name ? '*' : '+'
+    exe 'sign define '.railName.' text='.textLabel
     exe 'sign place '.stationInfo["id"].' line='.stationInfo["position"][1].' name='.railName.' buffer='.stationInfo["bufferid"]
 
     call add(stationList,stationInfo)
 endfunction
 
-function! subway#destroy_station()
+function! subway#destroy_station(...)
     let stationId = s:subway_get_id_from_line_number_in_buffer(line("."))
     if stationId == -1
         return
     endif
+    
+    let railName = a:0 == 0 ? s:current_rail_name : a:1
 
-    call s:subway_remove_station_from_id("", stationId)
+    call s:subway_remove_station_from_id(railName, stationId)
 
     exe 'sign unplace '.stationId
 endfunction
 
 
+function! subway#toggle_station(...)
+    let railName = a:0 == 0 ? s:current_rail_name : a:1
+    if s:subway_get_id_from_line_number_in_buffer(line(".")) == -1
+        call subway#make_station(railName)
+    else
+        call subway#destroy_station(railName)
+    endif
+endfunction
+
+function! 
 
 " Restore 'cpoptions' {{{
 let &cpo = s:save_cpo
