@@ -83,6 +83,26 @@ function! s:subway_get_station_list(railName)
 endfunction
 
 
+function! s:subway_remove_station_from_id(railName, stationId)
+    let staionList = s:subway_get_station_list(a:railName)
+
+    let result = 0
+    let index = 0
+    for station in staionList
+        if station['id'] == a:stationId
+            let result = 1
+            break
+        endif
+        let index = index + 1
+    endfor
+
+    if result == 1
+        call remove(staionList, index)
+    endif
+
+    return result
+endfunction
+
 function! s:subway_get_station_from_id(railName, stationId)
     let l:stationList = s:subway_get_station_list(a:railName)
 
@@ -97,7 +117,7 @@ function! s:subway_get_station_from_id(railName, stationId)
     return l:resultStation 
 endfunction
 
-function! s:subway_get_station_id_from_line_number(lineNumber)
+function! s:subway_get_id_from_line_number_in_buffer(lineNumber)
     let l:nativeSignalResult = s:subway_execute_command('sign place buffer='.bufnr('%'))
     let l:nativeSignalList = s:vital_data_string.lines(l:nativeSignalResult)
 
@@ -114,7 +134,7 @@ function! s:subway_get_station_id_from_line_number(lineNumber)
             continue
         endif
 
-        let l:result = substitute(signalstring,'.*id=\([0-9]\+\).*','\1',"")
+        let l:result = substitute(signalstring,'.*id=\([0-9A-Za-z]\+\).*','\1',"")
         break
     endfor
 
@@ -181,8 +201,14 @@ function! subway#make_station(...)
 endfunction
 
 function! subway#destroy_station()
-    echo s:subway_get_station_id_from_line_number(line("."))
- 
+    let stationId = s:subway_get_id_from_line_number_in_buffer(line("."))
+    if stationId == -1
+        return
+    endif
+
+    call s:subway_remove_station_from_id("", stationId)
+
+    exe 'sign unplace '.stationId
 endfunction
 
 
