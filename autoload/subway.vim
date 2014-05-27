@@ -117,8 +117,12 @@ function! s:subway_get_station_from_id(railName, stationId)
     return l:resultStation 
 endfunction
 
-function! subway#show_all_station_in_buffer()
-    echo s:subway_get_native_station_sign_list("")
+function! subway#show_all_station_in_current_buffer()
+    echo s:subway_get_native_station_sign_list("", bufnr('%'))
+endfunction
+
+function! subway#show_all_station()
+    echo s:subway_get_native_station_sign_list_for_all_buffer("")
 endfunction
 
 function! s:subway_get_rail_name_from_native_sign(signString)
@@ -151,8 +155,9 @@ endfunction
 "   Get station sign from the rail name. 
 "   if rail name is empty Get all station sign 
 "return dictionary list { name:railName, line:lineNumber, id:id} ...
-function! s:subway_get_native_station_sign_list(railName)
-    let l:nativesignResult = s:subway_execute_command('sign place buffer='.bufnr('%'))
+function! s:subway_get_native_station_sign_list(railName, buffernumber)
+    "let l:nativesignResult = s:subway_execute_command('sign place buffer='.bufnr('%'))
+    let l:nativesignResult = s:subway_execute_command('sign place buffer='.a:buffernumber)
 
     let l:searchString = "name=subway_" . a:railName
 
@@ -178,10 +183,24 @@ function! s:subway_get_native_station_sign_list(railName)
     return l:resultList
 endfunction
 
+function! s:subway_get_native_station_sign_list_for_all_buffer(railName)
+    let l:bufNumber = bufnr("$")
 
+    let l:allsignList = []
+    for i in range(l:bufNumber)
+        if bufexists(i) == 0
+            continue
+        endif
+    
+        let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, i)
+        call extend(l:allsignList, l:nativeSignInfoList)
+    endfor
+
+    return l:allsignList
+endfunction
 
 function! s:subway_get_id_from_line_number_in_buffer(lineNumber, railName)
-    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, bufnr('%'))
 
     let l:result = -1
     for nativeSignInfo in l:nativeSignInfoList
@@ -211,7 +230,7 @@ endfunction
 "       index 1
 "           name
 function! s:subway_get_id_and_rail_name_from_line_number_in_buffer(lineNumber)
-    let l:nativeSignInfoList = s:subway_get_native_station_sign_list("")
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list("", bufnr('%'))
 
     let result = {}
     for nativeSignInfo in l:nativeSignInfoList
@@ -230,7 +249,7 @@ function! s:subway_get_id_and_rail_name_from_line_number_in_buffer(lineNumber)
 endfunction
 
 function! s:subway_get_line_number_from_station_id_in_buffer(railName, stationId)
-    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, bufnr('%'))
 
     let l:lineNumber = -1
     for nativeSignInfo in l:nativeSignInfoList
@@ -251,7 +270,7 @@ function! s:subway_get_line_number_from_station_id_in_buffer(railName, stationId
 endfunction
 
 function! s:subway_get_both_ends_station_in_buffer(railName, starting)
-    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, bufnr('%'))
 
     let l:lineNumber = 0 
     let l:stationId = -1
@@ -284,7 +303,7 @@ function! s:subway_get_both_ends_station_in_buffer(railName, starting)
 endfunction
 
 function! s:subway_get_near_station_in_buffer(railName, previous)
-    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, bufnr('%'))
 
     let l:currentLine = line(".")
     let l:stationId = -1 
@@ -325,9 +344,20 @@ function! s:subway_get_near_station_in_buffer(railName, previous)
 
 endfunction
 
-function! s:subway_cleaer_station_in_buffer(railName)
 
+function! s:subway_update_station_list(...)
+
+    let l:nativeSignInfoList = a:0 == 0 ? s:subway_get_native_station_sign_list(a:railName) : a:1
+
+endfunction
+
+function! s:subway_clear_station_in_all_buffer()
+
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, bufnr('%'))
     
+    for nativeSignInfo in l:nativeSignInfoList
+        
+    endfor
 
 endfunction
 
