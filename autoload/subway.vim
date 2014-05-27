@@ -117,64 +117,133 @@ function! s:subway_get_station_from_id(railName, stationId)
     return l:resultStation 
 endfunction
 
-function! s:subway_get_native_sing_list(railName)
-    let l:nativesingResult = s:subway_execute_command('sign place buffer='.bufnr('%'))
+function! subway#show_all_station_in_buffer()
+    echo s:subway_get_native_station_sign_list("")
+endfunction
 
-    "return s:vital_data_string.lines(l:nativesingResult)
-    let l:nativesingList = s:vital_data_string.lines(l:nativesingResult)
+function! s:subway_get_rail_name_from_native_sign(signString)
+    let railName = substitute(a:signString,'.*name=subway_\([0-9a-zA-Z]\+\)_.*','\1',"")
+    return railName
+endfunction
+
+function! s:subway_get_line_number_from_native_sign(signString)
+    let lineNumber = substitute(a:signString,'.*line=\([0-9]\+\).*','\1',"")
+    return lineNumber == "" ?  -1 : lineNumber
+endfunction
+
+
+function! s:subway_get_id_from_native_sign(signString)
+    let result = substitute(a:signString,'.*id=\([0-9A-Za-z]\+\).*','\1',"")
+    return result == "" ?  0 : result
+endfunction
+
+function! s:subway_is_station_sign_from_native_sign(signString)
+    let result = 1
+    if match(a:signString, "name=subway_", 0) < 0
+        let result = 0
+    endif
+
+    return result
+endfunction
+
+"brief get native sign list
+"param railName string argument
+"   Get station sign from the rail name. 
+"   if rail name is empty Get all station sign 
+"return dictionary list { name:railName, line:lineNumber, id:id} ...
+function! s:subway_get_native_station_sign_list(railName)
+    let l:nativesignResult = s:subway_execute_command('sign place buffer='.bufnr('%'))
+
+    let l:searchString = "name=subway_" . a:railName
+
+    "return s:vital_data_string.lines(l:nativesignResult)
+    let l:nativesignList = s:vital_data_string.lines(l:nativesignResult)
    
     let l:resultList = []
-    for singstring in l:nativesingList
-        
-        "check name
-        if match(singstring, "name=".a:railName, 0) < 0
+    for signString in l:nativesignList
+
+        if s:subway_is_station_sign_from_native_sign(signString) == 0
             continue
         endif
-        call add(l:resultList, singstring)
+
+        let dict = {
+                  \ 'name' : s:subway_get_rail_name_from_native_sign(signString),
+                  \ 'line' : s:subway_get_line_number_from_native_sign(signString),
+                  \ 'id'   : s:subway_get_id_from_native_sign(signString),
+                  \}
+
+        call add(l:resultList, dict)
     endfor
 
     return l:resultList
 endfunction
 
-function! s:subway_get_id_from_line_number_in_buffer(railName, lineNumber)
-    let l:nativesingList = s:subway_get_native_sing_list(a:railName)
+
+
+function! s:subway_get_id_from_line_number_in_buffer(lineNumber, railName)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName)
 
     let l:result = -1
-    for singstring in l:nativesingList
+    for nativeSignInfo in l:nativeSignInfoList
         
         "check line number
-        if match(singstring, "line=" . a:lineNumber, 0) < 0
-            continue
+        if nativeSignInfo['line'] != a:lineNumber
+           continue 
         endif
 
         "check name
-        if match(singstring, "name=".a:railName, 0) < 0
-            continue
+        if nativeSignInfo['name'] != a:railName
+           continue 
         endif
 
-        let l:result = substitute(singstring,'.*id=\([0-9A-Za-z]\+\).*','\1',"")
+        let l:result = nativeSignInfo['id']
         break
     endfor
 
     return l:result
 endfunction
 
+
+"brief get id and rail name from native sign in buffer
+"return list
+"       index 0 
+"           id
+"       index 1
+"           name
+function! s:subway_get_id_and_rail_name_from_line_number_in_buffer(lineNumber)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list("")
+
+    let result = {}
+    for nativeSignInfo in l:nativeSignInfoList
+        
+        "check line number
+        if nativeSignInfo['line'] != a:lineNumber
+           continue 
+        endif
+
+        call add(result, nativeSignInfo['id'])
+        call add(result, nativeSignInfo['name'])
+        break
+    endfor
+
+    return result
+endfunction
+
 function! s:subway_get_line_number_from_station_id_in_buffer(railName, stationId)
-    let l:nativesingList = s:subway_get_native_sing_list(a:railName)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName)
 
     let l:lineNumber = -1
-    for singstring in l:nativesingList
+    for nativeSignInfo in l:nativeSignInfoList
         "check name
-        if match(singstring, "name=".a:railName, 0) < 0
+        if nativeSignInfo['name'] != a:railName
             continue
         endif
             
-        let l:tempId = substitute(singstring,'.*id=\([0-9A-Za-z]\+\).*','\1',"")
-        if l:tempId != a:stationId
+        if nativeSignInfo['id'] != a:stationId
             continue
         endif
 
-        let l:lineNumber = substitute(singstring,'.*line=\([0-9]\+\).*','\1',"")
+        let l:lineNumber = nativeSignInfo['line']
         break
     endfor
 
@@ -182,35 +251,32 @@ function! s:subway_get_line_number_from_station_id_in_buffer(railName, stationId
 endfunction
 
 function! s:subway_get_both_ends_station_in_buffer(railName, starting)
-    let l:nativesingList = s:subway_get_native_sing_list(a:railName)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName)
 
     let l:lineNumber = 0 
     let l:stationId = -1
-    for singString in l:nativesingList
+    for nativeSignInfo in l:nativeSignInfoList
         "check name
-        if match(singString, "name=".a:railName, 0) < 0
+        if nativeSignInfo['name'] != a:railName
             continue
         endif
             
-        let l:tempLineNumber = substitute(singString,'.*line=\([0-9]\+\).*','\1',"")
-        let l:tempStationId = substitute(singString,'.*id=\([0-9A-Za-z]\+\).*','\1',"")
-
         if l:lineNumber == 0
             "check line number
-            let l:lineNumber = l:tempLineNumber
-            let l:stationId = l:tempStationId
+            let l:lineNumber = nativeSignInfo['line']
+            let l:stationId = nativeSignInfo['id']
         else
             let l:base = l:lineNumber
-            let l:target = l:tempLineNumber
+            let l:target = nativeSignInfo['line']
 
             if a:starting == 0
-                let l:base = l:tempLineNumber
+                let l:base = nativeSignInfo['line']
                 let l:target = l:lineNumber
             endif
 
             if  l:target < l:base 
-                let l:lineNumber = l:tempLineNumber
-                let l:stationId = l:tempStationId
+                let l:lineNumber = nativeSignInfo['line']
+                let l:stationId = nativeSignInfo['id']
             endif
         endif
     endfor
@@ -218,34 +284,31 @@ function! s:subway_get_both_ends_station_in_buffer(railName, starting)
 endfunction
 
 function! s:subway_get_near_station_in_buffer(railName, previous)
-    let l:currentLine = line(".")
-    let l:singList = s:subway_get_native_sing_list(a:railName)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName)
 
+    let l:currentLine = line(".")
     let l:stationId = -1 
     let l:diffValue = 0
-    for singString in l:singList
+    for nativeSignInfo in l:nativeSignInfoList
         
-        let l:tempLineNumber = substitute(singString,'.*line=\([0-9]\+\).*','\1',"")
-        if l:currentLine == l:tempLineNumber
+        if l:currentLine == nativeSignInfo['line']
             continue
         endif
 
         let l:tempDiffValue = 10000000000
         if a:previous == 1
-            if l:tempLineNumber > l:currentLine 
+            if nativeSignInfo['line'] > l:currentLine 
                 continue
             endif
-
-            let l:tempDiffValue = l:currentLine - l:tempLineNumber
-         
+            let l:tempDiffValue = l:currentLine - nativeSignInfo['line']
         else
-            if l:tempLineNumber < l:currentLine 
+            if nativeSignInfo['line'] < l:currentLine 
                 continue
             endif
-            let l:tempDiffValue = l:tempLineNumber - l:currentLine 
+            let l:tempDiffValue = nativeSignInfo['line'] - l:currentLine 
         endif
         
-        let l:tempStationId = substitute(singString,'.*id=\([0-9A-Za-z]\+\).*','\1',"")
+        let l:tempStationId = nativeSignInfo['id']
 
         if l:stationId == -1
             let l:diffValue = l:tempDiffValue
@@ -262,10 +325,18 @@ function! s:subway_get_near_station_in_buffer(railName, previous)
 
 endfunction
 
-function! s:subway_cleaer_station_in_buffer()
+function! s:subway_cleaer_station_in_buffer(railName)
+
+    
 
 endfunction
 
+function! s:subway_set_station(railName, stationInfo)
+    let textLabel = a:railName == s:central_rail_name ? '*' : (a:railName != s:current_rail_name ? 'x' : '+')
+
+    exe 'sign define subway_'.a:railName.'_ text='.textLabel
+    exe 'sign place '.a:stationInfo["id"].' line='.a:stationInfo["line"].' name=subway_'.a:railName.'_ buffer='.a:stationInfo["bufferid"]
+endfunction
 
 function! subway#change_rail_from_name(...)
 
@@ -309,10 +380,11 @@ function! subway#create_rail(railName)
     return 1
 endfunction
 
+
 function! subway#make_station(...)
     let railName = a:0 == 0 ? s:current_rail_name : a:1
 
-    let stationId = s:subway_get_id_from_line_number_in_buffer(railName, line("."))
+    let stationId = s:subway_get_id_from_line_number_in_buffer(line("."), railName)
     if stationId != -1
         return
     endif
@@ -320,19 +392,16 @@ function! subway#make_station(...)
     let stationList = s:subway_get_station_list(railName)
     let stationInfo = s:create_station_info()
 
-
-    let textLabel = railName == s:central_rail_name ? '*' : (railName != s:current_rail_name ? 'x' : '+')
-
-    exe 'sign define '.railName.' text='.textLabel
-    exe 'sign place '.stationInfo["id"].' line='.stationInfo["line"].' name='.railName.' buffer='.stationInfo["bufferid"]
-
     call add(stationList,stationInfo)
+
+    call s:subway_set_station(railName, stationInfo)
+
 endfunction
 
 function! subway#destroy_station(...)
     let railName = a:0 == 0 ? s:current_rail_name : a:1
 
-    let stationId = s:subway_get_id_from_line_number_in_buffer(railName, line("."))
+    let stationId = s:subway_get_id_from_line_number_in_buffer(line("."), railName)
     if stationId == -1
         return
     endif
@@ -346,7 +415,7 @@ endfunction
 
 function! subway#toggle_station(...)
     let railName = a:0 == 0 ? s:current_rail_name : a:1
-    if s:subway_get_id_from_line_number_in_buffer(railName, line(".")) == -1
+    if s:subway_get_id_from_line_number_in_buffer(line("."), railName) == -1
         call subway#make_station(railName)
     else
         call subway#destroy_station(railName)
