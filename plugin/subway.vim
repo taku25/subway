@@ -5,8 +5,8 @@ set cpo&vim
 
 
 
-command! SBMakeCentralStation call subway#make_station("central")
-command! SBDestroyCentralStation call subway#destroy_station("central")
+command! SBMakeCentralStation call subway#make_central_station()
+command! SBDestroyCentralStation call subway#destroy_central_station()
 
 command! -nargs=? SBMakeStation call subway#make_station(<f-args>)
 command! -nargs=? SBDestroyStation call subway#destroy_station(<f-args>)
