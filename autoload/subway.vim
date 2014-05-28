@@ -40,7 +40,12 @@ let s:station_dict = {
 function! s:create_station_info(railName)
     
     let subStationList = []
-    "bufferidで十分？ filepathいらないかも
+
+    "id       : uniq station id
+    "line     : station linenumber
+    "bufferid : buffernumber
+    "parent   : parent railName
+    "subrail  : sub railName
     let stationInfo = {
                     \ 'id'         : s:station_id,
                     \ 'line'       : str2nr(line(".")),
@@ -55,13 +60,13 @@ function! s:create_station_info(railName)
 endfunction
 
 function! s:subway_execute_command(command)
-    let oldLang = v:lang
+    let saveLang = v:lang
     exec ":lan mes en_US"
     let l:result = ""
     redir => l:result
     silent exe a:command
     redir END
-    exec ":lan mes " . oldLang
+    exec ":lan mes " . saveLang
     return l:result
 endfunction
 
@@ -164,13 +169,6 @@ function! s:subway_get_station_from_id(railName, stationId)
     return l:resultStation 
 endfunction
 
-function! subway#show_all_station_in_current_buffer()
-    echo s:subway_get_native_station_sign_list("", bufnr('%'))
-endfunction
-
-function! subway#show_all_station()
-    echo s:subway_get_native_station_sign_list_for_all_buffer("")
-endfunction
 
 function! s:subway_get_rail_name_from_native_sign(signString)
     let railName = substitute(a:signString,'.*name=subway_\([0-9a-zA-Z]\+\)_.*','\1',"")
@@ -418,7 +416,11 @@ function! s:subway_set_station(stationInfo)
     let textLabel = a:stationInfo['parent'] == s:central_rail_name ? '*' :
                                  \ (len(a:stationInfo['subrail']) == 0 ? '+' : 'x')
 
-    exe 'sign define subway_'.a:stationInfo['parent'].'_ text='.textLabel
+    let highlightValue = g:subway_enable_highlight == 0 ? "" :
+                            \ ' linehl='.g:subway_line_highlight. 
+                            \ ' texthl='.g:subway_text_highlight
+
+    exe 'sign define subway_'.a:stationInfo['parent'].'_ text='.textLabel.highlightValue
     exe 'sign place '.a:stationInfo["id"].' line='.a:stationInfo["line"].' name=subway_'.a:stationInfo['parent'].'_ buffer='.a:stationInfo["bufferid"]
 endfunction
 

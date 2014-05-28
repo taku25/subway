@@ -4,6 +4,19 @@ set cpo&vim
 "}}}
 
 
+" global variable {{{
+
+let g:subway_enable_highlight =
+      \ get(g:, 'subway_enable_highlight', '0')
+
+let g:subway_line_highlight =
+      \ get(g:, 'subway_line_highlight', 'Title')
+
+let g:subway_text_highlight =
+      \ get(g:, 'subway_text_highlight', 'CursorLine')
+
+
+"}}}
 
 command! SBMakeCentralStation call subway#make_central_station()
 command! SBDestroyCentralStation call subway#destroy_central_station()
@@ -17,7 +30,6 @@ command! SBMoveNextStation call subway#move_staion(0)
 command! -nargs=1 SBCreateRail call subway#create_rail(<f-args>)
 command! SBChangeRail call subway#change_rail_from_list()
 
-command! SBShowAllStation call subway#show_all_station()
 " Restore 'cpoptions' {{{
 let &cpo = s:save_cpo
 unlet s:save_cpo
