@@ -30,6 +30,9 @@ command! SBMoveNextStation call subway#move_staion(0)
 command! -nargs=1 SBCreateRail call subway#create_rail(<f-args>)
 command! SBChangeRail call subway#change_rail_from_list()
 
+command! -nargs=? SBClearRail call subway#clear_rail(<f-args>)
+command! -nargs=? SBDestroyRail call subway#destroy_rail(<f-args>)
+
 " Restore 'cpoptions' {{{
 let &cpo = s:save_cpo
 unlet s:save_cpo

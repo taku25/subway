@@ -403,8 +403,8 @@ endfunction
 
 function! s:subway_clear_station_in_all_buffer()
 
-    let l:nativeSignInfoList = s:subway_get_native_station_sign_list("", bufnr('%'))
-    
+    let l:nativeSignInfoList = subway_get_native_station_sign_list_for_all_buffer()
+
     "all clear!!
     for nativeSignInfo in l:nativeSignInfoList
         exe 'sign unplace '.nativeSignInfo['id']
@@ -421,7 +421,11 @@ function! s:subway_set_station(stationInfo)
                             \ ' texthl='.g:subway_text_highlight
 
     exe 'sign define subway_'.a:stationInfo['parent'].'_ text='.textLabel.highlightValue
-    exe 'sign place '.a:stationInfo["id"].' line='.a:stationInfo["line"].' name=subway_'.a:stationInfo['parent'].'_ buffer='.a:stationInfo["bufferid"]
+    exe 'sign place '.a:stationInfo["id"].
+                    \' line='.a:stationInfo["line"].
+                    \' name=subway_'.a:stationInfo['parent'].
+                    \'_ buffer='.a:stationInfo["bufferid"]
+
 endfunction
 
 function! subway#change_rail_from_name(...)
@@ -578,6 +582,52 @@ function! subway#move_staion(previous, ...)
     exe ':'.l:lineNumber
     
 endfunction
+
+function! subway#clear_rail(...)
+    let railName = a:0 == 0 ? s:current_rail_name : a:1
+    
+    if !has_key(railName)
+        return
+    endif
+    
+    let l:nativeSignInfoList = subway_get_native_station_sign_list_for_all_buffer(railName)
+   
+    "unplace
+    for nativeSignInfo in l:nativeSignInfoList
+        exe 'sign unplace '.nativeSignInfo['id']
+    endfor
+
+    "cleaer station
+    let s:station_dict[railName] = [] 
+
+endfunction
+
+function! subway#destroy_rail(...)
+    let railName = a:0 == 0 ? s:current_rail_name : a:1
+    
+    if !has_key(railName)
+        return
+    endif
+    
+    let l:nativeSignInfoList = subway_get_native_station_sign_list_for_all_buffer(railName)
+   
+    "unplace
+    for nativeSignInfo in l:nativeSignInfoList
+        exe 'sign unplace '.nativeSignInfo['id']
+    endfor
+
+    "can't delete centrail and default rail
+    if railName == s:central_rail_name || railName == s:default_rail_name
+        echo "can't delete centrail and default rail. clear station"
+        return
+    endif
+
+    "remove rail
+    call remove(s:station_dict, railName)
+
+endfunction
+
+
 
 " Restore 'cpoptions' {{{
 let &cpo = s:save_cpo
