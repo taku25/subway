@@ -204,40 +204,39 @@ function! s:subway_get_native_station_sign_list(railName, buffernumber)
     "let l:nativesignResult = s:subway_execute_command('sign place buffer='.bufnr('%'))
     let l:nativesignResult = s:subway_execute_command('sign place buffer='.a:buffernumber)
 
-    let l:searchString = "name=subway_" . a:railName
-
     "return s:vital_data_string.lines(l:nativesignResult)
     let l:nativesignList = s:vital_data_string.lines(l:nativesignResult)
    
-    let l:resultList = []
+    let resultList = []
     for signString in l:nativesignList
 
         if s:subway_is_station_sign_from_native_sign(signString) == 0
             continue
         endif
-
+        
         let dict = {
                   \ 'name' : s:subway_get_rail_name_from_native_sign(signString),
                   \ 'line' : s:subway_get_line_number_from_native_sign(signString),
                   \ 'id'   : s:subway_get_id_from_native_sign(signString),
                   \}
 
-        call add(l:resultList, dict)
+        call add(resultList, dict)
     endfor
-
-    return l:resultList
+        
+    return resultList
 endfunction
 
-function! s:subway_get_native_station_sign_list_for_all_buffer(railName)
+function! s:subway_get_native_station_sign_list_for_all_buffer()
     let l:bufNumber = bufnr("$")
 
     let l:allsignList = []
     for i in range(l:bufNumber)
-        if bufexists(i) == 0
+        let bufnumber = i + 1
+        if bufexists(bufnumber) == 0
             continue
         endif
     
-        let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, i)
+        let l:nativeSignInfoList = s:subway_get_native_station_sign_list("", bufnumber)
         call extend(l:allsignList, l:nativeSignInfoList)
     endfor
 
@@ -256,8 +255,10 @@ function! s:subway_get_id_from_line_number_in_buffer(lineNumber, railName)
         endif
 
         "check name
-        if nativeSignInfo['name'] != a:railName
-           continue 
+        if a:railName != ""
+            if nativeSignInfo['name'] != a:railName
+               continue 
+            endif
         endif
 
         let l:result = nativeSignInfo['id']
@@ -403,9 +404,9 @@ endfunction
 
 function! s:subway_clear_station_in_all_buffer()
 
-    let l:nativeSignInfoList = subway_get_native_station_sign_list_for_all_buffer()
-
-    "all clear!!
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list_for_all_buffer()
+   
+    "unplace
     for nativeSignInfo in l:nativeSignInfoList
         exe 'sign unplace '.nativeSignInfo['id']
     endfor
@@ -444,7 +445,7 @@ function! subway#change_rail_from_name(...)
     "2.clear
     call s:subway_clear_station_in_all_buffer()
     "3.
-    let s:current_rail_name = l:railName
+    let s:current_rail_name = railName
 
 
     "base station
@@ -586,18 +587,13 @@ endfunction
 function! subway#clear_rail(...)
     let railName = a:0 == 0 ? s:current_rail_name : a:1
     
-    if !has_key(railName)
+    if !has_key(s:station_dict, railName)
         return
     endif
     
-    let l:nativeSignInfoList = subway_get_native_station_sign_list_for_all_buffer(railName)
-   
-    "unplace
-    for nativeSignInfo in l:nativeSignInfoList
-        exe 'sign unplace '.nativeSignInfo['id']
-    endfor
+    call s:subway_clear_station_in_all_buffer()
 
-    "cleaer station
+    "clear station
     let s:station_dict[railName] = [] 
 
 endfunction
@@ -605,16 +601,11 @@ endfunction
 function! subway#destroy_rail(...)
     let railName = a:0 == 0 ? s:current_rail_name : a:1
     
-    if !has_key(railName)
+    if !has_key(s:station_dict, railName)
         return
     endif
     
-    let l:nativeSignInfoList = subway_get_native_station_sign_list_for_all_buffer(railName)
-   
-    "unplace
-    for nativeSignInfo in l:nativeSignInfoList
-        exe 'sign unplace '.nativeSignInfo['id']
-    endfor
+    call s:subway_clear_station_in_all_buffer()
 
     "can't delete centrail and default rail
     if railName == s:central_rail_name || railName == s:default_rail_name
