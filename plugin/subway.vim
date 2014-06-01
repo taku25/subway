@@ -27,11 +27,11 @@ command! -nargs=? SBToggleStation call subway#toggle_station(<f-args>)
 command! SBMovePreviousStation call subway#move_staion(1)
 command! SBMoveNextStation call subway#move_staion(0)
 
-command! -nargs=1 SBCreateRail call subway#create_rail(<f-args>)
-command! SBChangeRail call subway#change_rail_from_list()
+command! -nargs=1 SBCreateLine call subway#create_line(<f-args>)
+command! SBChangeLine call subway#change_line_from_list()
 
-command! -nargs=? SBClearRail call subway#clear_rail(<f-args>)
-command! -nargs=? SBDestroyRail call subway#destroy_rail(<f-args>)
+command! -nargs=? SBClearLine call subway#clear_line(<f-args>)
+command! -nargs=? SBDestroyLine call subway#destroy_line(<f-args>)
 
 " Restore 'cpoptions' {{{
 let &cpo = s:save_cpo

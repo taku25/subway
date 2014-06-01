@@ -19,10 +19,10 @@ let s:vital_data_string = s:vital.import('Data.String')
 
 
 " local variable.  " {{{
-let s:default_rail_name = "default"
-let s:central_rail_name = "CENTRAL"
+let s:default_line_name = "default"
+let s:central_line_name = "CENTRAL"
 
-let s:current_rail_name = s:default_rail_name
+let s:current_line_name = s:default_line_name
 let s:station_id = 1
 
 "...
@@ -31,27 +31,27 @@ let s:central_station_list = []
 
 
 let s:station_dict = {
-                    \  s:default_rail_name : s:default_station_list,
-                    \  s:central_rail_name : s:central_station_list,
+                    \  s:default_line_name : s:default_station_list,
+                    \  s:central_line_name : s:central_station_list,
                     \ }
 
 "}}}
 
-function! s:create_station_info(railName)
+function! s:create_station_info(lineName)
     
     let subStationList = []
 
     "id       : uniq station id
     "line     : station linenumber
     "bufferid : buffernumber
-    "parent   : parent railName
-    "subrail  : sub railName
+    "parent   : parent lineName
+    "subline  : sub lineName
     let stationInfo = {
                     \ 'id'         : s:station_id,
                     \ 'line'       : str2nr(line(".")),
                     \ 'bufferid'   : bufnr('%'),
-                    \ 'parent'     : a:railName,
-                    \ 'subrail'    : subStationList,
+                    \ 'parent'     : a:lineName,
+                    \ 'subline'    : subStationList,
                     \}
 
     let s:station_id = s:station_id + 1
@@ -81,31 +81,31 @@ function! s:subway_make_user_select_list(targetlist)
 endfunction
 
 
-function! s:subway_get_station_list(railName)
+function! s:subway_get_station_list(lineName)
 
-    let targetRailName = a:railName == "" ? s:current_rail_name : a:railName
+    let targetLineName = a:lineName == "" ? s:current_line_name : a:lineName
     
-    if has_key(s:station_dict, targetRailName) == 0
+    if has_key(s:station_dict, targetLineName) == 0
         "
-        call subway#create_rail(targetRailName)
+        call subway#create_line(targetLineName)
     endif
 
-    return s:station_dict[targetRailName]
+    return s:station_dict[targetLineName]
 
 endfunction
 
-function! s:subway_get_sub_station_list(railName)
+function! s:subway_get_sub_station_list(lineName)
 
     let resultList = []
-    for railKey in keys(s:station_dict)
-        if railKey == a:railName || railKey == s:central_rail_name
+    for lineKey in keys(s:station_dict)
+        if lineKey == a:lineName || lineKey == s:central_line_name
             continue
         endif
 
-        let stationList = s:station_dict[railKey]
+        let stationList = s:station_dict[lineKey]
         for stationInfo in stationList
-            for subRailName in stationInfo['subrail']
-                if subRailName == a:railName
+            for subLineName in stationInfo['subline']
+                if subLineName == a:lineName
                     call add(resultList, stationInfo)
                 endif
             endfor 
@@ -116,12 +116,12 @@ function! s:subway_get_sub_station_list(railName)
 
 endfunction
 
-function! s:subway_remove_sub_station(stationInfo, subRailName)
+function! s:subway_remove_sub_station(stationInfo, subLineName)
 
     let result = 0
     let index = 0
-    for subrail in a:stationInfo['subrail']
-        if subrail == a:subRailName
+    for subline in a:stationInfo['subline']
+        if subline == a:subLineName
             let result = 1
             break
         endif
@@ -129,7 +129,7 @@ function! s:subway_remove_sub_station(stationInfo, subRailName)
     endfor
 
     if result == 1
-        call remove(a:stationInfo['subrail'], index)
+        call remove(a:stationInfo['subline'], index)
     endif
 
     return result
@@ -155,8 +155,8 @@ function! s:subway_remove_station(stationInfo)
     return result
 endfunction
 
-function! s:subway_get_station_from_id(railName, stationId)
-    let l:stationList = s:subway_get_station_list(a:railName)
+function! s:subway_get_station_from_id(lineName, stationId)
+    let l:stationList = s:subway_get_station_list(a:lineName)
 
     let l:resultStation = {}
     for station in l:stationList
@@ -170,9 +170,9 @@ function! s:subway_get_station_from_id(railName, stationId)
 endfunction
 
 
-function! s:subway_get_rail_name_from_native_sign(signString)
-    let railName = substitute(a:signString,'.*name=subway_\([0-9a-zA-Z]\+\)_.*','\1',"")
-    return railName
+function! s:subway_get_line_name_from_native_sign(signString)
+    let lineName = substitute(a:signString,'.*name=subway_\([0-9a-zA-Z]\+\)_.*','\1',"")
+    return lineName
 endfunction
 
 function! s:subway_get_line_number_from_native_sign(signString)
@@ -196,11 +196,11 @@ function! s:subway_is_station_sign_from_native_sign(signString)
 endfunction
 
 "brief get native sign list
-"param railName string argument
-"   Get station sign from the rail name. 
-"   if rail name is empty Get all station sign 
-"return dictionary list { name:railName, line:lineNumber, id:id} ...
-function! s:subway_get_native_station_sign_list(railName, buffernumber)
+"param lineName string argument
+"   Get station sign from the line name. 
+"   if line name is empty Get all station sign 
+"return dictionary list { name:lineName, line:lineNumber, id:id} ...
+function! s:subway_get_native_station_sign_list(lineName, buffernumber)
     "let l:nativesignResult = s:subway_execute_command('sign place buffer='.bufnr('%'))
     let l:nativesignResult = s:subway_execute_command('sign place buffer='.a:buffernumber)
 
@@ -215,7 +215,7 @@ function! s:subway_get_native_station_sign_list(railName, buffernumber)
         endif
         
         let dict = {
-                  \ 'name' : s:subway_get_rail_name_from_native_sign(signString),
+                  \ 'name' : s:subway_get_line_name_from_native_sign(signString),
                   \ 'line' : s:subway_get_line_number_from_native_sign(signString),
                   \ 'id'   : s:subway_get_id_from_native_sign(signString),
                   \}
@@ -243,8 +243,8 @@ function! s:subway_get_native_station_sign_list_for_all_buffer()
     return l:allsignList
 endfunction
 
-function! s:subway_get_id_from_line_number_in_buffer(lineNumber, railName)
-    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, bufnr('%'))
+function! s:subway_get_id_from_line_number_in_buffer(lineNumber, lineName)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:lineName, bufnr('%'))
 
     let l:result = -1
     for nativeSignInfo in l:nativeSignInfoList
@@ -255,8 +255,8 @@ function! s:subway_get_id_from_line_number_in_buffer(lineNumber, railName)
         endif
 
         "check name
-        if a:railName != ""
-            if nativeSignInfo['name'] != a:railName
+        if a:lineName != ""
+            if nativeSignInfo['name'] != a:lineName
                continue 
             endif
         endif
@@ -269,9 +269,9 @@ function! s:subway_get_id_from_line_number_in_buffer(lineNumber, railName)
 endfunction
 
 
-"brief get id and rail name from native sign in buffer
+"brief get id and line name from native sign in buffer
 "return list [id, name]
-function! s:subway_get_id_and_rail_name_from_line_number_in_buffer(lineNumber)
+function! s:subway_get_id_and_line_name_from_line_number_in_buffer(lineNumber)
     let l:nativeSignInfoList = s:subway_get_native_station_sign_list("", bufnr('%'))
 
     let result = []
@@ -290,14 +290,14 @@ function! s:subway_get_id_and_rail_name_from_line_number_in_buffer(lineNumber)
     return result
 endfunction
 
-function! s:subway_get_line_number_from_station_id_in_buffer(railName, stationId)
-    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, bufnr('%'))
+function! s:subway_get_line_number_from_station_id_in_buffer(lineName, stationId)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:lineName, bufnr('%'))
 
     let l:lineNumber = -1
     for nativeSignInfo in l:nativeSignInfoList
         "check name
-        if a:railName != ""
-            if nativeSignInfo['name'] != a:railName
+        if a:lineName != ""
+            if nativeSignInfo['name'] != a:lineName
                 continue
             endif
         endif
@@ -313,15 +313,15 @@ function! s:subway_get_line_number_from_station_id_in_buffer(railName, stationId
     return l:lineNumber
 endfunction
 
-function! s:subway_get_both_ends_station_in_buffer(railName, starting)
-    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, bufnr('%'))
+function! s:subway_get_both_ends_station_in_buffer(lineName, starting)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:lineName, bufnr('%'))
 
     let l:lineNumber = 0 
     let l:stationId = -1
     for nativeSignInfo in l:nativeSignInfoList
         "check name
-        if a:railName != ""
-            if nativeSignInfo['name'] != a:railName
+        if a:lineName != ""
+            if nativeSignInfo['name'] != a:lineName
                 continue
             endif
         endif
@@ -347,8 +347,8 @@ function! s:subway_get_both_ends_station_in_buffer(railName, starting)
     return l:stationId
 endfunction
 
-function! s:subway_get_near_station_in_buffer(railName, previous)
-    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:railName, bufnr('%'))
+function! s:subway_get_near_station_in_buffer(lineName, previous)
+    let l:nativeSignInfoList = s:subway_get_native_station_sign_list(a:lineName, bufnr('%'))
 
     let l:currentLine = line(".")
     let l:stationId = -1 
@@ -414,8 +414,8 @@ function! s:subway_clear_station_in_all_buffer()
 endfunction
 
 function! s:subway_set_station(stationInfo)
-    let textLabel = a:stationInfo['parent'] == s:central_rail_name ? '*' :
-                                 \ (len(a:stationInfo['subrail']) == 0 ? '+' : 'x')
+    let textLabel = a:stationInfo['parent'] == s:central_line_name ? '*' :
+                                 \ (len(a:stationInfo['subline']) == 0 ? '+' : 'x')
 
     let highlightValue = g:subway_enable_highlight == 0 ? "" :
                             \ ' linehl='.g:subway_line_highlight. 
@@ -429,12 +429,12 @@ function! s:subway_set_station(stationInfo)
 
 endfunction
 
-function! subway#change_rail_from_name(...)
+function! subway#change_line_from_name(...)
 
-    let railName = a:0 == 0 ? s:default_rail_name : a:1
+    let lineName = a:0 == 0 ? s:default_line_name : a:1
 
-    if has_key(s:station_dict, railName) == 0
-        echo "not found " . railName 
+    if has_key(s:station_dict, lineName) == 0
+        echo "not found " . lineName 
         return
     endif
 
@@ -445,87 +445,87 @@ function! subway#change_rail_from_name(...)
     "2.clear
     call s:subway_clear_station_in_all_buffer()
     "3.
-    let s:current_rail_name = railName
+    let s:current_line_name = lineName
 
 
     "base station
-    let stationInfoList = s:station_dict[railName]
+    let stationInfoList = s:station_dict[lineName]
     for station in stationInfoList
         call s:subway_set_station(station)
     endfor
 
     "central station
-    let stationInfoList = s:station_dict[s:central_rail_name]
+    let stationInfoList = s:station_dict[s:central_line_name]
     for station in stationInfoList
         call s:subway_set_station(station)
     endfor 
 
     "substation
-    let stationInfoList = s:subway_get_sub_station_list(railName)
+    let stationInfoList = s:subway_get_sub_station_list(lineName)
     for station in stationInfoList
         call s:subway_set_station(station)
     endfor
 endfunction
 
 
-function! subway#change_rail_from_list()
+function! subway#change_line_from_list()
 
-    let l:railList = []
+    let l:lineList = []
     for stationKey in keys(s:station_dict)
-        if stationKey == s:central_rail_name
+        if stationKey == s:central_line_name
             continue
         endif
-        call add(l:railList, stationKey)
+        call add(l:lineList, stationKey)
     endfor
 
-    let l:displayList = s:subway_make_user_select_list(l:railList)
+    let l:displayList = s:subway_make_user_select_list(l:lineList)
     let l:inputnumber = inputlist(l:displayList) - 1
     if l:inputnumber < 0 || l:inputnumber > len(l:displayList)
         return 
     endif
 
-    call subway#change_rail_from_name(l:railList[l:inputnumber])
+    call subway#change_line_from_name(l:lineList[l:inputnumber])
 endfunction
 
-function! subway#create_rail(railName)
+function! subway#create_line(lineName)
 
-    if a:railName == ""
-        echo "rail name is Empty" 
+    if a:lineName == ""
+        echo "line name is Empty" 
         return 0
-    elseif has_key(s:station_dict, a:railName)
-        echo a:railName . " already exists" 
+    elseif has_key(s:station_dict, a:lineName)
+        echo a:lineName . " already exists" 
         return 0
     endif
 
-    let s:station_dict[a:railName] = []
+    let s:station_dict[a:lineName] = []
 
     return 1
 endfunction
 
 
 function! subway#make_central_station()
-    call subway#make_station(s:central_rail_name)
+    call subway#make_station(s:central_line_name)
 endfunction
 
 function! subway#destroy_central_station(...)
-    call subway#destroy_station(s:central_rail_name)
+    call subway#destroy_station(s:central_line_name)
 endfunction
 
 function! subway#make_station(...)
-    let railName = a:0 == 0 ? s:current_rail_name : a:1
+    let lineName = a:0 == 0 ? s:current_line_name : a:1
 
-    let staionIdAndRailName = s:subway_get_id_and_rail_name_from_line_number_in_buffer(line("."))
-    if len(staionIdAndRailName) != 0
+    let staionIdAndLineName = s:subway_get_id_and_line_name_from_line_number_in_buffer(line("."))
+    if len(staionIdAndLineName) != 0
         "not exists station"
         return
     endif
 
-    let stationList = s:subway_get_station_list(railName)
-    let stationInfo = s:create_station_info(railName)
+    let stationList = s:subway_get_station_list(lineName)
+    let stationInfo = s:create_station_info(lineName)
 
     
-    if railName != s:central_rail_name && railName != s:current_rail_name
-        call add(stationInfo['subrail'], s:current_rail_name)
+    if lineName != s:central_line_name && lineName != s:current_line_name
+        call add(stationInfo['subline'], s:current_line_name)
     endif
 
     call add(stationList,stationInfo)
@@ -535,86 +535,86 @@ function! subway#make_station(...)
 endfunction
 
 function! subway#destroy_station(...)
-    let railName = a:0 == 0 ? s:current_rail_name : a:1
+    let lineName = a:0 == 0 ? s:current_line_name : a:1
 
-    let stationIdAndRailName = s:subway_get_id_and_rail_name_from_line_number_in_buffer(line("."))
+    let stationIdAndLineName = s:subway_get_id_and_line_name_from_line_number_in_buffer(line("."))
      
-    if len(stationIdAndRailName) == 0
+    if len(stationIdAndLineName) == 0
         "not exists station"
         return
     endif
    
-    let stationInfo = s:subway_get_station_from_id(stationIdAndRailName[1], stationIdAndRailName[0])
+    let stationInfo = s:subway_get_station_from_id(stationIdAndLineName[1], stationIdAndLineName[0])
 
-    if railName == s:central_rail_name || railName == s:current_rail_name
+    if lineName == s:central_line_name || lineName == s:current_line_name
         call s:subway_remove_station(stationInfo)
     else
-        call s:subway_remove_sub_station(stationInfo, s:current_rail_name)
+        call s:subway_remove_sub_station(stationInfo, s:current_line_name)
     endif
 
-    exe 'sign unplace '.stationIdAndRailName[0]
+    exe 'sign unplace '.stationIdAndLineName[0]
 endfunction
 
 
 function! subway#toggle_station(...)
-    let railName = a:0 == 0 ? s:current_rail_name : a:1
-    let staionIdAndRailName = s:subway_get_id_and_rail_name_from_line_number_in_buffer(line("."))
-    if len(staionIdAndRailName) == 0
-        call subway#make_station(railName)
+    let lineName = a:0 == 0 ? s:current_line_name : a:1
+    let staionIdAndLineName = s:subway_get_id_and_line_name_from_line_number_in_buffer(line("."))
+    if len(staionIdAndLineName) == 0
+        call subway#make_station(lineName)
     else
-        call subway#destroy_station(railName)
+        call subway#destroy_station(lineName)
     endif
 endfunction
 
 function! subway#move_staion(previous, ...)
-    let railName = a:0 == 0 ? "" : a:1
+    let lineName = a:0 == 0 ? "" : a:1
 
-    let l:stationId = s:subway_get_near_station_in_buffer(railName, a:previous)
+    let l:stationId = s:subway_get_near_station_in_buffer(lineName, a:previous)
     if l:stationId == -1
-        let l:stationId = s:subway_get_both_ends_station_in_buffer(railName, 1 - a:previous)
+        let l:stationId = s:subway_get_both_ends_station_in_buffer(lineName, 1 - a:previous)
     endif
 
     if l:stationId == -1
         return
     endif
 
-    let l:lineNumber = s:subway_get_line_number_from_station_id_in_buffer(railName, l:stationId)
+    let l:lineNumber = s:subway_get_line_number_from_station_id_in_buffer(lineName, l:stationId)
 
     exe ':'.l:lineNumber
     
 endfunction
 
-function! subway#clear_rail(...)
-    let railName = a:0 == 0 ? s:current_rail_name : a:1
+function! subway#clear_line(...)
+    let lineName = a:0 == 0 ? s:current_line_name : a:1
     
-    if !has_key(s:station_dict, railName)
+    if !has_key(s:station_dict, lineName)
         return
     endif
     
     call s:subway_clear_station_in_all_buffer()
 
     "clear station
-    let s:station_dict[railName] = [] 
+    let s:station_dict[lineName] = [] 
 
 endfunction
 
-function! subway#destroy_rail(...)
-    let railName = a:0 == 0 ? s:current_rail_name : a:1
+function! subway#destroy_line(...)
+    let lineName = a:0 == 0 ? s:current_line_name : a:1
     
-    if !has_key(s:station_dict, railName)
+    if !has_key(s:station_dict, lineName)
         return
     endif
     
     call s:subway_clear_station_in_all_buffer()
 
-    "can't delete centrail and default rail
-    if railName == s:central_rail_name || railName == s:default_rail_name
-        echo "can't delete centrail and default rail. clear station"
+    "can't delete centline and default line
+    if lineName == s:central_line_name || lineName == s:default_line_name
+        echo "can't delete centline and default line. clear station"
         return
     endif
 
-    "remove rail
-    call remove(s:station_dict, railName)
+    "remove line
+    call remove(s:station_dict, lineName)
 
 endfunction
 
