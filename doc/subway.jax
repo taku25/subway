@@ -1,0 +1,226 @@
+subway.jax*	txtにsignをつけて管理やジャンプを行うプラグイン
+
+Author  : taku25 <taku36@gmail.com>
+Version : 2014-06-27
+License : MIT license {{{
+
+	Permission is hereby granted, free of charge, to any person obtaining
+	a copy of this software and associated documentation files (the
+	"Software"), to deal in the Software without restriction, including
+	without limitation the rights to use, copy, modify, merge, publish,
+	distribute, sublicense, and/or sell copies of the Software, and to
+	permit persons to whom the Software is furnished to do so, subject to
+	the following conditions:
+	The above copyright notice and this permission notice shall be
+	included in all copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+}}}
+
+目次					*subway-contents*
+
+        概要                   |subway-introduction|
+        インストール           |subway-install|
+        変数                   |subway-variables|
+        コマンド               |subway-command|
+        関数                   |subway-function|
+        設定例                 |subway-settings-example|
+        ToDo                   |subway-todo|
+        更新履歴               |subway-changelog|
+
+==============================================================================
+概要					*subway-introduction*
+
+	*subway* は、Vimで編集中のファイルに対してsignを設定したり
+    signそのものグループ単位で管理するプラグインです
+    またカレントになるグループは常に１つのみですがグループをまたいだマークを
+    作る事も可能です
+
+==============================================================================
+インストール				*subway-install*
+
+    1. manual
+
+    配布アーカイブに含まれるファイル群を、そのフォルダごと Vim の
+    'runtimepath' にコピーします。 $HOME/.vim（Windows の場合は
+    $HOME/vimfiles）へのインストールがもっとも一般的です
+    インストール後の配置は
+
+    $HOME/.vim/autoload/subway*
+    $HOME/.vim/plugin/subway.vim
+    $HOME/.vim/doc/subway.*
+
+    になります。
+
+    2. neobundle
+
+    .vimrcに
+
+    NeoBundle 'taku25/subway'
+
+    でok
+
+
+==============================================================================
+変数					*subway-variables*
+
+                    *g:subway_enable_highlight*
+g:subway_enable_highlight	
+    singをつけた行に色をつけるか
+
+    1で有効
+
+    初期値は0です
+
+                    *g:subway_line_highlight*
+g:subway_line_highlight
+    g:subway_enable_highlightで1の場合にsign行をハイライトさせる色です
+
+    初期値はTitleです
+
+                    *g:subway_text_highlight*
+g:subway_text_highlight
+    g:subway_enable_highlightで1の場合にsign行のテキストをハイライトさせる色です
+
+    初期値はCursorLineです
+
+==============================================================================
+コマンド				*subway-command*
+                    
+                    *SBMakeCentralStation*
+SBMakeCentralStation
+    カーソル行の場所にすべてのsignグループ共通のsignを作成します
+
+                    *SBDestroyCentralStation*
+SBDestroyCentralStation
+    カーソル行の場所にあるすべてのsignグループ共通のsignを削除します
+
+                    *SBMakeStation*
+SBMakeStation(groupname)
+    カーソル行にsignを作成します
+    引数がない場合はカレントのgroupを対象にします
+
+                    *SBDestroyStation*
+SBDestroyStation(groupname)
+    カーソル行のsignを削除します
+    引数がない場合はカレントのgroupを対象にします
+
+                    *SBToggleStation*
+SBToggleStation(groupname)
+    カーソル行にsign 作成/削除のを行います
+    引数がない場合はカレントのgroupを対象にします
+
+                    *SBMovePreviousStation*
+SBMovePreviousStation
+    カーソル行に一番近い前のsignの場所に移動します
+
+                    *SBMoveNextStation*
+SBMoveNextStation
+    カーソル行に一番近い次のsignの場所に移動します
+
+                    *SBCreateLine*
+SBCreateLine(groupname)
+    新しいグループを作成します
+
+                    *SBChangeLine*
+SBChangeLine
+    グループを切り替えます
+
+                    *SBClearLine*
+SBClearLine(groupname)
+    グループにあるsignをすべて削除します
+    引数がない場合はカレントのgroupを対象にします
+
+                    *SBDestroyLine*
+SBDestroyLine
+    グループそのものを削除します
+    引数がない場合はカレントのgroupを対象にします
+
+==============================================================================
+関数				*subway-function*
+                
+                *subway#make_central_station()*
+subway#make_central_station()
+    カーソル行に
+    すべてのグループに共通のsignを作成します
+    
+                *subway#destroy_central_station()*
+subway#destroy_central_station()
+    カーソル行に
+    すべてのグループに共通のsignを作成します
+
+                *subway#make_station({groupname})*
+subway#make_station({groupname})
+    カーソル行にsignを作成します
+
+    "groupname"
+    省略可能
+    省略した場合はカレントになっているグループを対象にします
+
+                *subway#destroy_station({groupname})*
+subway#destroy_station({groupname})
+    カーソル行にあるsignを削除します
+
+    "groupname"
+    省略可能
+    省略した場合はカレントになっているグループを対象にします
+
+                *subway#toggle_station({groupname})*
+subway#toggle_station({groupname})
+    カーソル行にsignを追加/削除します
+
+    "groupname"
+    省略可能
+    省略した場合はカレントになっているグループを対象にします
+                
+                *subway#move_staion({direction})*
+subway#move_staion({direction})
+    一番近いsignの場所に移動します
+
+    "direction"
+    1 一番近い前のsignに移動
+    0 一番近い次のsignに移動
+
+                *subway#create_line({groupname})*
+subway#create_line({groupname})
+    新しいグループを作成します
+
+                *subway#destroy_line({groupname})*
+subway#destroy_line({groupname})
+    新しいグループを削除します
+
+    "groupname"
+    省略可能
+    省略した場合はカレントになっているグループを対象にします
+
+                *subway#change_line_from_list()*
+subway#change_line_from_list()
+    グループを切り替えます
+                
+                *subway#clear_line()*
+subway#clear_line()
+    グループに設定されているsignをすべて削除します
+
+==============================================================================
+    設定例					*subway-settings-example*
+
+    nnoremap <silent> <C-m> :SBToggleStation<CR>
+    nnoremap <silent> <C-p> :SBMovePreviousStation<CR>
+    nnoremap <silent> <C-n> :SBMoveNextStation<CR>
+    let g:subway_enable_highlight = 1
+
+==============================================================================
+    TODO					*subway-todo*
+
+
+==============================================================================
+    更新履歴				*subway-changelog*
+
+
+    vim:tw=78:ts=4:ft=help:norl:noet:fen:fdl=0:fdm=marker:
